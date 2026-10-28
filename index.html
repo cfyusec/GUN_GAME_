@@ -562,17 +562,30 @@ W.knife={d:35,r:.35,mag:0,res:0,rm:1,ar:1,rp:0,ry:0,acc:0,mv:0,rt:0};for(const k
 let stabNext=0,busyT=0,silAnim=0,silDur=1.6,AM={},reloadT=0,semiLock=false,punch=0,punchY=0,burst=0,lastShot=0,bots=[],AC=null;let FL=S.gm.frag,gmT=S.gm.time*60;const bufs=new Map(),DG=Math.PI/180;
 Object.assign(P,{team:'p',hp:100,ar:100,fr:0,de:0,dead:false,rt:0});
 const ammoOf=id=>AM[id]||(AM[id]={m:W[id].mag,r:W[id].res});
-const SNDS={ak47:'f:ak47-1,ak47-2|r:ak47_clipout@.3,ak47_clipin@.6,ak47_boltpull@.85',glock18:'f:glock18-1,glock18-2|r:clipout1@.3,clipin1@.65,slideback1@.85',deagle:'f:deagle-1|r:de_clipout@.3,de_clipin@.65',
- scout:'f:scout_fire-1|r:scout_clipout@.3,scout_clipin@.6|z:zoom',awp:'f:awp1|r:awp_clipout@.3,awp_clipin@.6|z:zoom',
- m4a1:'f:m4a1_unsil-1,m4a1_unsil-2|fs:m4a1-1|r:m4a1_clipout@.3,m4a1_clipin@.6,m4a1_boltpull@.85|on:m4a1_silencer_on|off:m4a1_silencer_off',
- usp:'f:usp_unsil-1|fs:usp1,usp2|r:usp_clipout@.3,usp_clipin@.6,usp_slideback@.85|on:usp_silencer_on|off:usp_silencer_off',
- galil:'f:galil-1,galil-2|r:galil_clipout@.3,galil_clipin@.6,galil_boltpull@.85',famas:'f:famas-1|r:famas_clipout@.3,famas_clipin@.6,famas_forearm@.85',
- mp5navy:'f:mp5-1,mp5-2|r:mp5_clipout@.3,mp5_clipin@.6,mp5_slideback@.85',p90:'f:p90-1|r:p90_clipout@.3,p90_clipin@.6,p90_boltpull@.85',
- p228:'f:p228-1|r:p228_clipout@.3,p228_clipin@.6,p228_slidepull@.85',fiveseven:'f:fiveseven-1|r:fiveseven_clipout@.3,fiveseven_clipin@.6,fiveseven_slidepull@.85',
- elite:'f:elite_fire|r:elite_reloadstart@.2,elite_leftclipin@.5,elite_rightclipin@.75,elite_sliderelease@.9',tmp:'f:tmp-1,tmp-2|r:tmp_clipout@.3,tmp_clipin@.6,tmp_boltpull@.85',
- mac10:'f:mac10-1|r:mac10_clipout@.3,mac10_clipin@.6,mac10_boltpull@.85',ump45:'f:ump45-1|r:ump45_clipout@.3,ump45_clipin@.6,ump45_boltslap@.85',
- m249:'f:m249-1,m249-2|r:m249_coverup@.2,m249_boxout@.4,m249_boxin@.65,m249_chain@.8,m249_coverdown@.92',knife:'f:knife_slash1,knife_slash2',
- hegrenade:'f:pinpull|x:explode3,explode4,explode5',flashbang:'f:pinpull|x:flashbang-1,flashbang-2',smokegrenade:'f:pinpull|x:sg_explode'};
+const SNDS = {
+ ak47:'f:ak47-1,ak47-2|r:ak47_clipout@.3,ak47_clipin@.6,ak47_boltpull@.85',
+ glock18:'f:glock18-1,glock18-2|r:clipout1@.3,clipin1@.65,slideback1@.85',
+ deagle:'f:deagle-1|r:de_clipout@.3,de_clipin@.65',
+ scout:'f:scout_fire-1|r:scout_clipout@.3,scout_clipin@.6|z:zoom',
+ awp:'f:awp1|r:awp_clipout@.3,awp_clipin@.6|z:zoom',
+ m4a1:'f:m4a1-1,m4a1-2,m4a1_unsil-1,m4a1_unsil-2|fs:m4a1-1|r:m4a1_clipout@.3,m4a1_clipin@.6,m4a1_boltpull@.85|on:m4a1_silencer_on|off:m4a1_silencer_off',
+ usp:'f:usp1,usp2,usp_unsil-1|fs:usp1,usp2|r:usp_clipout@.3,usp_clipin@.6,usp_slideback@.85|on:usp_silencer_on|off:usp_silencer_off',
+ galil:'f:galil-1,galil-2|r:galil_clipout@.3,galil_clipin@.6,galil_boltpull@.85',
+ famas:'f:famas-1|r:famas_clipout@.3,famas_clipin@.6,famas_forearm@.85',
+ mp5navy:'f:mp5-1,mp5-2|r:mp5_clipout@.3,mp5_clipin@.6,mp5_slideback@.85',
+ p90:'f:p90-1|r:p90_clipout@.3,p90_clipin@.6,p90_boltpull@.85',
+ p228:'f:p228-1|r:p228_clipout@.3,p228_clipin@.6,p228_slidepull@.85',
+ fiveseven:'f:fiveseven-1|r:fiveseven_clipout@.3,fiveseven_clipin@.6,fiveseven_slidepull@.85',
+ elite:'f:elite_fire|r:elite_reloadstart@.2,elite_leftclipin@.5,elite_rightclipin@.75,elite_sliderelease@.9',
+ tmp:'f:tmp-1,tmp-2|r:tmp_clipout@.3,tmp_clipin@.6,tmp_boltpull@.85',
+ mac10:'f:mac10-1|r:mac10_clipout@.3,mac10_clipin@.6,mac10_boltpull@.85',
+ ump45:'f:ump45-1|r:ump45_clipout@.3,ump45_clipin@.6,ump45_boltslap@.85',
+ m249:'f:m249-1,m249-2|r:m249_coverup@.2,m249_boxout@.4,m249_boxin@.65,m249_chain@.8,m249_coverdown@.92',
+ knife:'f:knife_slash1,knife_slash2',
+ hegrenade:'f:pinpull|x:explode3,explode4,explode5',
+ flashbang:'f:pinpull|x:flashbang-1,flashbang-2',
+ smokegrenade:'f:pinpull|x:sg_explode'
+};
 const SL={};for(const id in SNDS){const o={f:[],fs:[],rel:[],z:[],x:[],on:[],off:[]};SNDS[id].split('|').forEach(p=>{const[k,v]=p.split(':'),a=v.split(',');if(k==='r')o.rel=a.map(x=>{const[n,f]=x.split('@');return[n,+f];});else o[k]=a;});SL[id]=o;}
 const slotNames=id=>{const o=SL[id];return o?[...new Set([...o.f,...o.fs,...o.rel.map(r=>r[0]),...o.z,...o.x,...o.on,...o.off])]:[];};
 function playFile(id,n){if(!n)return false;try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const r=lib.find(x=>x.id===S.snd[id+':'+n])||defS(id,n);if(!r)return false;
