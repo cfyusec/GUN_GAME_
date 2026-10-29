@@ -1,3 +1,3 @@
-Block gun game but model gun is cs 1.6
+Block gun game
 
 IN DEVELOPING
