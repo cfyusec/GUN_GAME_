@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>GoldSrc Bhop</title>
+<title>GoldSrc Gun Game</title>
 <style>
 :root{--panel:#2b3426ee;--edge:#6d7d60;--ink:#e8dfb0;--mute:#a49f7c;--acc:#ffb000;--accink:#1b1809;--hud:#ffb000;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--panel:#e6e2c8ee;--edge:#8b8a6a;--ink:#2a2c1c;--mute:#5b5c45;--accink:#fff8e0;--hud:#ffb000}}
@@ -59,6 +59,8 @@ body.mainscr #pick{display:none!important}
 #arf{background:#3b8be0}
 body.mainscr #money,body.mainscr #bars{display:none!important}
 .mh{color:var(--acc);font-weight:700;margin:8px 0 3px;border-bottom:1px solid var(--edge)}
+#loading{position:fixed;inset:0;z-index:30;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:var(--acc);font:700 20px "Lucida Console",monospace}
+#lbar{width:min(360px,70vw);height:10px;border:1px solid var(--acc)}#lfill{display:block;height:100%;width:0;background:var(--acc);transition:width .1s}
 #scope{position:fixed;inset:0;pointer-events:none;display:none;background:radial-gradient(circle at 50% 50%,transparent 0,transparent 41vmin,#000 41.4vmin)}
 #scope::before,#scope::after{content:'';position:absolute;background:#000}
 #scope::before{left:0;right:0;top:50%;height:1px}#scope::after{top:0;bottom:0;left:50%;width:1px}
@@ -79,7 +81,7 @@ nav#tabs{display:flex;gap:6px;margin:6px 0 10px}#tabs .btn.on{color:var(--acc);b
 </head>
 <body>
 <canvas id="cv"></canvas><div id="cross"></div>
-<div id="hud"><div id="spd">0<small>u/s</small></div><div id="tm">0:00.00</div></div><div id="msg"></div><div id="fps"></div><div id="dm"></div><div id="money">$800</div><div id="bars"><div class="hb"><span>HP</span><div class="bar"><i id="hpf"></i></div><b id="hpn">100</b></div><div class="hb"><span>AR</span><div class="bar"><i id="arf"></i></div><b id="arn">100</b></div></div><div id="hit"></div><div id="pick"></div><div id="flashov"></div><div id="scope"></div><div id="nomodel"></div><div id="lockhint">Click the game to lock the mouse · ~ opens the menu</div>
+<div id="hud"><div id="spd">0<small>u/s</small></div><div id="tm">0:00.00</div></div><div id="msg"></div><div id="fps"></div><div id="dm"></div><div id="money">$800</div><div id="bars"><div class="hb"><span>HP</span><div class="bar"><i id="hpf"></i></div><b id="hpn">100</b></div><div class="hb"><span>AR</span><div class="bar"><i id="arf"></i></div><b id="arn">100</b></div></div><div id="loading"><div id="ltxt">Loading models and sounds…</div><div id="lbar"><i id="lfill"></i></div></div><div id="hit"></div><div id="pick"></div><div id="flashov"></div><div id="scope"></div><div id="nomodel"></div><div id="lockhint">Click the game to lock the mouse · ~ opens the menu</div>
 <div id="menu"><div id="main"><div id="mtitle">GOLDSRC<br>DEATHMATCH</div><div id="mlist"></div></div><div id="box">
 <div id="bhead"><button class="btn" id="bback">← Back</button><b id="bname"></b></div>
 <nav id="tabs"><button class="btn" data-t="play">New Game</button><button class="btn" data-t="maps">Map files</button><button class="btn" data-t="weps">Weapons</button><button class="btn" data-t="models">Models</button><button class="btn" data-t="set">Settings</button></nav>
@@ -93,7 +95,7 @@ nav#tabs{display:flex;gap:6px;margin:6px 0 10px}#tabs .btn.on{color:var(--acc);b
 <label><span>Bot weapons</span><select id="gw"><option value="all">Any</option><option value="pistols">Pistols</option><option value="smg">SMG</option><option value="rifles">Rifles</option><option value="snipers">Snipers</option><option value="mg">Machine gun</option></select></label>
 <label><span>Frag limit</span><input type="number" id="gf" min="5" max="200" style="width:60px"></label>
 <label><span>Time limit (min, 0 = off)</span><input type="number" id="gt" min="0" max="60" style="width:60px"></label></div></div>
-<p style="margin:10px 0"><button class="btn p" id="go">Start</button> <button class="btn" id="openbuy">Buy menu</button></p>
+<p style="margin:10px 0"><button class="btn p" id="go">Start</button> </p>
 <details class="opt"><summary>Controls / Help</summary><p><kbd>WASD</kbd> move · <kbd>Space</kbd>/wheel jump · <kbd>LMB</kbd> fire · <kbd>RMB</kbd> stab / scope (Scout, AWP) / silencer (M4A1, USP) · <kbd>R</kbd> reload · <kbd>F</kbd> inspect · <kbd>B</kbd> buy menu · <kbd>C</kbd>/<kbd>Ctrl</kbd> crouch · <kbd>Shift</kbd> walk · <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> weapons · <kbd>E</kbd> pick up · <kbd>G</kbd> drop · <kbd>H</kbd> swap hand · <kbd>V</kbd> 3rd person · <kbd>T</kbd> restart · <kbd>~</kbd> menu · <kbd>[</kbd> <kbd>]</kbd> cycle animations · Numpad <kbd>0</kbd>–<kbd>9</kbd> play sequence</p></details>
 <details class="opt"><summary>Model details</summary><div id="info"></div></details>
 </section>
@@ -102,7 +104,10 @@ nav#tabs{display:flex;gap:6px;margin:6px 0 10px}#tabs .btn.on{color:var(--acc);b
 <section class="tab" id="t-weps"></section>
 <section class="tab" id="t-models"><h2>Model library</h2><p>Weapon models named like v_ak47.mdl are matched to their weapon automatically. Change any weapon's model in the buy menu.</p>
 <div><button class="btn" id="addm">Add .mdl files…</button><input type="file" id="mfiles" accept=".mdl" multiple hidden></div><div id="lib" style="margin-top:6px"></div></section>
-<section class="tab" id="t-set"><details class="opt" open><summary>Crosshair</summary>
+<section class="tab" id="t-set"><details class="opt" open><summary>Model packs</summary>
+<p>Pick a folder that contains your packs: <b>[pack_name]/model</b> (v_ak47.mdl …) and <b>[pack_name]/sound</b> (ak47-1.wav …). Each pack is stored separately and you choose which one to use.</p>
+<div id="packs"></div><p><button class="btn p" id="addpack">Add pack folder…</button><input type="file" id="packf" webkitdirectory multiple hidden></p></details>
+<details class="opt" open><summary>Crosshair</summary>
 <label><span>Style</span><select id="xs"><option value="cross">Cross</option><option value="dot">Dot</option><option value="circle">Circle</option></select></label>
 <label><span>Color</span><input type="color" id="xc"></label>
 <label><span>Size</span><input type="range" id="xz" min="2" max="30"></label>
@@ -130,6 +135,7 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 let S={slots:[null,null,null,null],map:'arena',hand:'R',sens:2.5,fov:90,auto:true,bob:false,style:'smooth',scale:1,minimal:false};
 try{Object.assign(S,JSON.parse(localStorage.getItem('gsbhop')||'{}'))}catch(e){}
 if(S.map==='course')S.map='test';
+S.pack=S.pack||'';
 S.xh=Object.assign({style:'cross',color:'#4cff4c',size:8,thick:2,gap:4},S.xh);
 S.gm=Object.assign({bots:5,diff:1,frag:30,time:0,bw:'all',mode:'dm',team:'CT'},S.gm);
 const save=()=>{try{localStorage.setItem('gsbhop',JSON.stringify(S))}catch(e){}};
@@ -138,14 +144,14 @@ const err=t=>{$('err').textContent=t||''};
 /* DEVELOPER DEFAULTS: paste base64 here. models['ak47']='<base64 of v_ak47.mdl>'; sounds['ak47']={fire:'<base64>',reload:'<base64>',fire_sil:''} */
 const ASSETS={models:{},sounds:{}};
 const b64=x=>Uint8Array.from(atob(x),c=>c.charCodeAt(0)).buffer;
-const defM=w=>ASSETS.models[w]?{id:'def:'+w,type:'mdl',name:'(default)',data:b64(ASSETS.models[w])}:DEFM[w]?{id:'def:'+w,type:'mdl',name:'(model/ folder)',data:DEFM[w]}:null;
-const defS=(w,k)=>(ASSETS.sounds[w]||{})[k]?{id:'def:'+w+k,name:'(default)',data:b64(ASSETS.sounds[w][k])}:DEFB[k]?{id:'def:'+k,name:'(sound/ folder)',data:DEFB[k]}:null;
+const defM=w=>ASSETS.models[w]?{id:'def:'+w,type:'mdl',name:'(default)',data:b64(ASSETS.models[w])}:PKM[w]?{id:'pk:'+w+S.pack,type:'mdl',name:'(pack)',data:PKM[w]}:DEFM[w]?{id:'def:'+w,type:'mdl',name:'(model/ folder)',data:DEFM[w]}:null;
+const defS=(w,k)=>(ASSETS.sounds[w]||{})[k]?{id:'def:'+w+k,name:'(default)',data:b64(ASSETS.sounds[w][k])}:PKS[k]?{id:'pk:'+k+S.pack,name:'(pack)',data:PKS[k]}:DEFB[k]?{id:'def:'+k,name:'(sound/ folder)',data:DEFB[k]}:null;
 /* ---------- Library (IndexedDB, in-memory fallback) ---------- */
 const dbp=new Promise(r=>{try{const q=indexedDB.open('gsbhop-lib',1);q.onupgradeneeded=()=>q.result.createObjectStore('f',{keyPath:'id',autoIncrement:true});q.onsuccess=()=>r(q.result);q.onerror=()=>r(null);}catch(e){r(null)}});
 const idb=async(mode,fn)=>{const d=await dbp;if(!d)return null;return new Promise(res=>{try{const t=d.transaction('f',mode),rq=fn(t.objectStore('f'));t.oncomplete=()=>res(rq&&rq.result);t.onerror=t.onabort=()=>res(null);}catch(e){res(null)}});};
 let lib=[],memId=-1;
 const libLoad=async()=>{lib=(await idb('readonly',s=>s.getAll()))||[];};
-async function libAdd(name,type,data,x){x=x||{};const old=lib.find(r=>r.name===name&&r.size===data.byteLength&&r.w===x.w&&r.k===x.k);if(old)return old;
+async function libAdd(name,type,data,x){x=x||{};const old=lib.find(r=>r.name===name&&r.size===data.byteLength&&r.w===x.w&&r.k===x.k&&r.pk===x.pk);if(old)return old;
  const rec={name,type,data,size:data.byteLength,...x};let id=await idb('readwrite',s=>s.add(rec));if(id==null)id=memId--;rec.id=id;lib.push(rec);return rec;}
 const libDel=async id=>{await idb('readwrite',s=>s.delete(id));lib=lib.filter(r=>r.id!==id);};
 /* ---------- MDL (GoldSrc IDST v10) ---------- */
@@ -400,7 +406,7 @@ function act(k,q){const m=third?pm:vm;if(!m){if(k==='shoot'&&!third&&performance
  if(!l.length){if(!q)flashA('No animation: '+k);return;}
  if(k==='shoot')nextFire=performance.now()+(RATE[S.load[cs]]||.12)*1000;
  const i=l[Math.floor(Math.random()*l.length)];m.play(i,true);m.tag=k;if(!q)flashA(k+' → '+m.seqs[i].n);}
-function stab(){if(cs>=3){throwG(S.load[cs],true);return;}{const b0=S.load[cs];if(b0 in BURST){BURST[b0]=!BURST[b0];burstN=0;flash((b0==='glock18'?'Glock':'FAMAS')+' burst mode '+(BURST[b0]?'ON':'OFF'));return;}}if(S.load[cs] in SIL){toggleSil();return;}if(SNIP.includes(S.load[cs])){toggleZoom();return;}if(S.load[cs]==='knife'){const n=performance.now();if(P.dead||n<stabNext)return;stabNext=n+1000;nextFire=Math.max(nextFire,n+600);melee(90,56);}const m=third?pm:vm;if(!m)return;
+function stab(){if(cs>=3){throwG(S.load[cs],true);return;}{const b0=S.load[cs];if(b0 in BURST){BURST[b0]=!BURST[b0];burstN=0;flash((b0==='glock18'?'Glock':'FAMAS')+' burst mode '+(BURST[b0]?'ON':'OFF'));return;}}if(S.load[cs] in SIL){toggleSil();return;}if(SNIP.includes(S.load[cs])){toggleZoom();return;}if(S.load[cs]==='knife'){const n=performance.now();if(P.dead||n<stabNext)return;stabNext=n+1000;nextFire=Math.max(nextFire,n+600);meleeLater(90,56,.3);}const m=third?pm:vm;if(!m)return;
  const d=new THREE.Vector3(0,0,-1).applyQuaternion(cam.quaternion),o=P.p;
  const q=world.trace(o.x,o.y,o.z,o.x+d.x*48,o.y+d.y*48,o.z+d.z*48);
  const k=q.f<1?'stab':'stabmiss',o2=k==='stab'?'stabmiss':'stab';act(findSeq(m,k).length?k:o2);}
@@ -425,7 +431,7 @@ async function loadMap(){let w;const id=S.map;
  try{if(id==='test'||(id==='draft'&&!ED.boxes.length))w=boxMap('test');else if(id==='draft')w=boxMap('c',ED.boxes);else if(MAPS[id])w=boxMap('c',MAPS[id].b,MAPS[id].sp,MAPS[id].st);else{const r=lib.find(x=>String(x.id)===String(id));if(!r){S.map='test';return loadMap();}w=r.type==='cmap'?boxMap('c',JSON.parse(new TextDecoder().decode(r.data)).boxes):bsp(r.data.slice(0),wadMaps());}}
  catch(e){err('Map: '+e.message);S.map='test';w=boxMap('test');}
  if(world){HOLES.forEach(o=>scene.remove(o));HOLES.length=0;scene.remove(world.grp);world.grp.traverse(o=>{o.geometry&&o.geometry.dispose();if(o.material){o.material.map&&o.material.map.dispose();o.material.dispose();}});}
- world=w;scene.add(w.grp);scene.fog=new THREE.Fog(SKY,w.fog[0],w.fog[1]);cam.far=w.fog[1]+3000;cam.updateProjectionMatrix();restart();save();initBots();NAVP=prepareNav();}
+ world=w;scene.add(w.grp);scene.fog=new THREE.Fog(SKY,w.fog[0],w.fog[1]);cam.far=w.fog[1]+3000;cam.updateProjectionMatrix();restart();save();initBots();NAVP=prepareNav().then(loadDone,loadDone);}
 /* ---------- Weapons, thumbnails, library UI, buy menu ---------- */
 const CATS=['Pistols','Shotguns','Sub-Machine Guns','Rifles','Machine Guns','Knife','Equipment'];
 const WEAPONS0=[['glock18','Glock 18',1,400,1],['usp','USP .45 Tactical',1,500,1],['p228','P228 Compact',1,600,1],['deagle','Desert Eagle .50AE',1,650,1],['fiveseven','FN Five-seveN',1,750,1],['elite','.40 Dual Elites',1,800,1],
@@ -454,7 +460,7 @@ let tq=0;
 function queueThumbs(){const imgs=[...document.querySelectorAll('img.th[data-id]')],tok=++tq;
  const run=i=>{if(tok!==tq||i>=imgs.length)return;const r=lib.find(x=>x.id===+imgs[i].dataset.id);if(r){const u=thumb(r);if(u)imgs[i].src=u;}setTimeout(()=>run(i+1),15);};run(0);}
 function updatePlayerThumb(){return;const r=lib.find(x=>x.id===S.slots[3]),im=$('pth');if(r){const u=thumb(r);if(u)im.src=u;im.style.visibility=u?'visible':'hidden';}else im.style.visibility='hidden';}
-function buildWeapon(wid){const r=lib.find(x=>x.id===S.wep[wid])||defM(wid);if(!r||r.type!=='mdl')return null;try{const m=mdl(r.data.slice(0));m.wid=wid;return m;}catch(e){err(r.name+': '+e.message);return null;}}
+function buildWeapon(wid){const r=(S.pack&&PKM[wid]?{id:'pk:'+wid+S.pack,type:'mdl',name:'(pack)',data:PKM[wid]}:null)||lib.find(x=>x.id===S.wep[wid])||defM(wid);if(!r||r.type!=='mdl')return null;try{const m=mdl(r.data.slice(0));m.wid=wid;return m;}catch(e){err(r.name+': '+e.message);return null;}}
 function applyInfo(){const t=[];for(let n=0;n<3;n++){const w=WBY[S.load[n]],m=slots[n];if(w&&m){const r=lib.find(x=>x.id===S.wep[w.id]);t.push(w.name+' → '+(r?r.name:'')+'\n   '+mapTxt(m));}}$('info').textContent=t.join('\n');}
 async function applyLoadout(){for(let n=0;n<6;n++)slots[n]=buildWeapon(S.load[n]);
  const r=null;let pmx=null;
@@ -462,7 +468,7 @@ async function applyLoadout(){for(let n=0;n<6;n++)slots[n]=buildWeapon(S.load[n]
 function renderLib(){const mdls=lib.filter(r=>r.type==='mdl'),bsps=lib.filter(r=>r.type==='bsp'),on=(a,b)=>String(a)===String(b);
  const bt=r=>/^de_/i.test(r.name),row=(id,n,sub,x)=>`<div class="li map${on(S.map,id)?' on':''}" data-m="${id}"><span>${n}</span><small>${sub}</small>${x||''}</div>`,
   brow=r=>row(r.id,esc(r.name),'BSP · '+Math.round(r.size/1024)+' KB','<button class="x" data-id="'+r.id+'" title="Remove">✕</button>');
- $('maps').innerHTML='<div class="mh">Deathmatch / Team Deathmatch</div>'+[['arena','DM Arena'],['wh','DM Warehouse'],['train','Training range'],['test','Movement test arena']].map(([a,n])=>row(a,n,'built-in')).join('')+bsps.filter(r=>!bt(r)).map(brow).join('')+'<div class="mh">Bomb Defusal</div>'+row('bomb','de_box (test)','built-in')+bsps.filter(bt).map(brow).join('');
+ $('maps').innerHTML='<div class="mh">Deathmatch / Team Deathmatch</div>'+[['village','Village (Team Deathmatch)'],['arena','DM Arena'],['wh','DM Warehouse'],['train','Training range'],['test','Movement test arena']].map(([a,n])=>row(a,n,'built-in')).join('')+bsps.filter(r=>!bt(r)).map(brow).join('')+'<div class="mh">Bomb Defusal</div>'+row('bomb','de_box (test)','built-in')+bsps.filter(bt).map(brow).join('');
  $('lib').innerHTML=mdls.length?mdls.map(r=>`<div class="li"><img class="th" data-id="${r.id}" alt=""><span>${esc(r.name)}</span><small>${Math.round(r.size/1024)} KB</small><button class="x" data-id="${r.id}" title="Remove">✕</button></div>`).join(''):'<small>No models yet. Add .mdl files; they are saved in this browser.</small>';
  $('wads').innerHTML=lib.filter(r=>r.type==='wad').map(r=>`<div class="li"><span>${esc(r.name)}</span><small>WAD · ${Math.round(r.size/1024)} KB</small><button class="x" data-id="${r.id}" title="Remove">✕</button></div>`).join('')||'<small>No WAD files.</small>';
  $('maps').insertAdjacentHTML('beforeend',lib.filter(r=>r.type==='cmap').map(r=>`<div class="li map${on(S.map,r.id)?' on':''}" data-m="${r.id}"><span>${esc(r.name)}</span><small>custom</small><button class="btn ed" data-id="${r.id}" title="Edit">✎</button><button class="x" data-id="${r.id}" title="Remove">✕</button></div>`).join(''));
@@ -521,7 +527,6 @@ function wepUI(w){const el=document.createElement('div'),ks=['fire','reload'].co
  $('wamf').onchange=async e=>{const f=e.target.files[0];if(!f)return;const buf=await f.arrayBuffer();if(new DataView(buf).getInt32(0,true)!==0x54534449){err(f.name+': not a GoldSrc MDL');return;}const r=await libAdd(f.name,'mdl',buf,{w:w.id});S.wep[w.id]=r.id;save();if(S.load[w.slot]===w.id){slots[w.slot]=buildWeapon(w.id);if(cs===w.slot)equip(w.slot,true);applyInfo();}renderBuy();};
  el.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{kk=b.dataset.k;$('snf').click();});
  $('snf').onchange=async e=>{const f=e.target.files[0];if(!f)return;const r=await libAdd(f.name,'snd',await f.arrayBuffer(),{w:w.id,k:kk});S.snd[w.id+':'+kk]=r.id;save();renderBuyRight();};}
-$('openbuy').onclick=openBuy;
 /* ---------- Settings UI ---------- */
 function applyUI(){$('hand').value=S.hand;$('sens').value=S.sens;$('fov').value=S.fov;$('style').value=S.style;$('scale').value=S.scale;$('auto').checked=S.auto;$('bob').checked=S.bob;$('minimal').checked=!!S.minimal;$('anames').checked=!!S.animNames;$('showfps').checked=S.showFps!==false;$('fps').style.display=S.showFps===false?'none':'block';$('tpd').value=S.tpDist||70;document.body.classList.toggle('hide-hud',!!S.minimal);vwrap.scale.x=S.hand==='L'?-1:1;vwrap.scale.set(S.hand==='L'?-0.9:0.9,0.9,0.9);pv.scale.setScalar(0.85);cv.className=S.style==='retro'?'px':'';resize();}
 $('hand').onchange=e=>{S.hand=e.target.value;save();applyUI();};
@@ -600,7 +605,7 @@ const SNDS={ak47:'f:ak47-1,ak47-2|r:ak47_clipout@.3,ak47_clipin@.6,ak47_boltpull
 const SL={};for(const id in SNDS){const o={f:[],fs:[],rel:[],z:[],x:[],on:[],off:[],dp:[]};SNDS[id].split('|').forEach(p=>{const[k,v]=p.split(':'),a=v.split(',');if(k==='r')o.rel=a.map(x=>{const[n,f]=x.split('@');return[n,+f];});else o[k]=a;});SL[id]=o;}
 const slotNames=id=>{const o=SL[id];return o?[...new Set([...o.f,...o.fs,...o.rel.map(r=>r[0]),...o.z,...o.x,...o.on,...o.off,...o.dp])]:[];};
 function synth(id,kind){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const q=kind==='fire'&&SIL[id],ex=kind==='explode',n=AC.sampleRate*(ex?.6:.12)|0,b=AC.createBuffer(1,n,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.exp(-i/n*(q?9:ex?5:7))*(q?.5:ex?.9:.7);const s=AC.createBufferSource();s.buffer=b;s.connect(AC.destination);s.start();}catch(e){}}
-function playFile(id,n,fb,gn){if(!n)return false;try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const r=lib.find(x=>x.id===S.snd[id+':'+n])||defS(id,n);if(!r)return false;
+function playFile(id,n,fb,gn){if(!n)return false;try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const r=(S.pack&&PKS[n]?{id:'pk:'+n+S.pack,name:'(pack)',data:PKS[n]}:null)||lib.find(x=>x.id===S.snd[id+':'+n])||defS(id,n);if(!r)return false;
  const off=S.sndOff[id+':'+n]||0,run=b=>{const s=AC.createBufferSource(),gx=AC.createGain();gx.gain.value=gn||1;s.buffer=b;s.connect(gx);gx.connect(AC.destination);if(off<0)s.start(0,Math.min(b.duration-.01,-off/1000));else s.start(AC.currentTime+off/1000);};
  if(bufs.has(r.id))run(bufs.get(r.id));else AC.decodeAudioData(r.data.slice(0)).then(b=>{bufs.set(r.id,b);run(b);}).catch(()=>{if(fb)fb();});return true;}catch(e){return false;}}
 function playSnd(id,kind){const L=SL[id];if(!L)return;
@@ -635,9 +640,10 @@ function rayBots(o,d,max){let best=null;const oo=[o.x,o.y,o.z],dd=[d.x,d.y,d.z];
   if(ok&&(!best||t0<best.t))best={b,t:t0,g};}}
  return best&&best.t<=max?best:null;}
 function hurt(t,d,ar,g){d*={h:4,c:1,s:1.25,l:.75}[g];if(t.ar>0&&g!=='l'){const n=d*ar*.5,a=(d-n)*.5;if(a>t.ar){d-=t.ar*2;t.ar=0;}else{t.ar-=a;d=n;}}t.hp-=Math.round(d);return t.hp<=0;}
+function meleeLater(d,r,t){setTimeout(()=>{if(!P.dead&&S.load[cs]==='knife')melee(d,r);},t*1000);}
 function melee(d,r){r=r||64;const f={x:-Math.sin(yaw),z:-Math.cos(yaw)};for(const b of bots){if(b.dead||b.team===P.team)continue;const dx=b.p.x-P.p.x,dz=b.p.z-P.p.z,L=Math.hypot(dx,dz);if(L<r&&(dx*f.x+dz*f.z)/(L||1)>.4&&Math.abs(b.p.y-P.p.y)<60){blood({x:b.p.x,y:b.p.y+45,z:b.p.z},{x:f.x,y:.3,z:f.z},d>50?14:8);const c=$('cross');c.classList.add('hm');setTimeout(()=>c.classList.remove('hm'),90);if(hurt(b,d,1,'c'))killBot(b,'knife',false);}}}
 function gunFire(){if(P.dead||reloadT>0||busyT>0||(BM.on&&BM.ph!=='live'))return false;if(GR[S.load[cs]])return throwG(S.load[cs]);const id=S.load[cs],w=W[id];if(!w)return false;
- if(id==='knife'){melee(w.d);playSnd('knife','fire');return true;}
+ if(id==='knife'){meleeLater(w.d,64,.12);playSnd('knife','fire');return true;}
  if((w.semi||BURST[id])&&semiLock&&!inBurst)return false;const a=ammoOf(id);if(a.m<=0){if(a.r>0)startReload();return false;}
  a.m--;if(w.semi||BURST[id])semiLock=true;if(BURST[id]&&!inBurst){burstN=2;burstT=BI[id];burstId=id;}const now=performance.now();if(now-lastShot>350)burst=0;lastShot=now;burst++;
  const o={x:P.p.x,y:P.p.y+P.eye,z:P.p.z},sp=Math.hypot(P.v.x,P.v.z)/MAXS,sd=((SNIP.includes(id)&&!zoomLv?4.5:w.acc)+w.mv*(P.g?sp:1.8))*(P.duck?.7:1)*DG,r=sd*Math.sqrt(Math.random()),th=Math.random()*6.283;
@@ -654,7 +660,7 @@ function botBuy(b){if(S.gm.bw!=='all')return;let m=b.money;const T=b.team==='T',
  if(m>=5000&&Math.random()<.25)w='awp';else for(const id of pri){if(m>=WBY[id].price&&!(id==='deagle'&&Math.random()<.5)){w=id;break;}}
  if(w!==pist)m-=WBY[w].price;b.w=w;b.ar=0;if(m>=1000&&Math.random()<.8){m-=1000;b.ar=100;}b.money=m;}
 function botSpawn(b){let s=null;for(let i=0;i<12&&!s;i++){const L=(b.team==='T'||b.team==='CT')?spawnsFor(b.team):world.spawns;let c=L&&L.length?L[Math.random()*L.length|0]:{x:(Math.random()-.5)*1400,y:0,z:-100-Math.random()*1800};if(world.free(c.x,c.y,c.z,false))s=c;}
- s=b.home||s||{x:0,y:0,z:0};b.p.set(s.x,s.y,s.z);b.hp=100;b.ar=100;b.dead=false;b.vy=0;botWeapon(b);b.m.visible=true;b.vx=b.vz=0;b.blind=0;b.m.rotation.x=0;b.duck=false;setGun(b.H,b.w);}
+ s=b.home||s||{x:0,y:0,z:0};b.p.set(s.x,s.y,s.z);b.hp=100;b.ar=100;b.dead=false;b.vy=0;botWeapon(b);b.m.visible=true;b.vx=b.vz=0;b.blind=0;b.m.rotation.x=0;b.duck=false;b.sy=b.p.y;b.m.position.copy(b.p);setGun(b.H,b.w);}
 /* ---------- Built-in maps / humanoid ---------- */
 const SPf=([x,z,y,c])=>({x,y:y||0,z,yaw:Math.atan2(x,z),cls:c||'deathmatch'}),blk=(x,z,w,d,h,c)=>[x,h,z,w,d,h,c];
 function stairs(ex,ez,dx,dz,n,wid,c){const o=[];for(let k=1;k<=n;k++){const L=(n-k)*40+20;o.push([ex+dx*L,16*k,ez+dz*L,dx?40:wid,dx?wid:40,16*k,c]);}return o;}
@@ -674,7 +680,14 @@ const MAPS={};
  MAPS.train={b:T,sp:[[0,300]]};
  const D=[[0,0,0,2600,1600,32,G],blk(0,-800,2664,32,320,W),blk(0,800,2664,32,320,W),blk(-1300,0,32,1600,320,W),blk(1300,0,32,1600,320,W),blk(-300,-400,60,500,200,W),blk(-300,400,60,500,200,W),blk(500,0,60,500,200,W),
   blk(300,-500,96,96,96,C),blk(700,-300,96,96,96,C),blk(300,500,96,96,96,C),blk(700,300,96,96,96,C),blk(-700,-200,96,96,96,C),blk(-700,200,96,96,96,C)];
- MAPS.bomb={b:D,sp:[[-1100,-200,0,'terrorist'],[-1100,0,0,'terrorist'],[-1100,200,0,'terrorist'],[-1000,-100,0,'terrorist'],[-1000,100,0,'terrorist'],[1100,-200,0,'counterterrorist'],[1100,0,0,'counterterrorist'],[1100,200,0,'counterterrorist'],[1000,-100,0,'counterterrorist'],[1000,100,0,'counterterrorist']],st:[[900,-550],[900,550]]};})();
+ MAPS.bomb={b:D,sp:[[-1100,-200,0,'terrorist'],[-1100,0,0,'terrorist'],[-1100,200,0,'terrorist'],[-1000,-100,0,'terrorist'],[-1000,100,0,'terrorist'],[1100,-200,0,'counterterrorist'],[1100,0,0,'counterterrorist'],[1100,200,0,'counterterrorist'],[1000,-100,0,'counterterrorist'],[1000,100,0,'counterterrorist']],st:[[900,-550],[900,550]]};
+ const sg=(cx,cz,w,gap)=>gap?[blk(cx-(w+130)/4,cz,(w-130)/2,30,170,C),blk(cx+(w+130)/4,cz,(w-130)/2,30,170,C)]:[blk(cx,cz,w,30,170,C)],
+  sv=(cx,cz,d,gap)=>gap?[blk(cx,cz-(d+130)/4,30,(d-130)/2,170,C),blk(cx,cz+(d+130)/4,30,(d-130)/2,170,C)]:[blk(cx,cz,30,d,170,C)],
+  hz=(cx,cz,w,d,dr)=>[...sg(cx,cz-d/2,w,dr==='n'),...sg(cx,cz+d/2,w,dr==='s'),...sv(cx-w/2,cz,d,dr==='w'),...sv(cx+w/2,cz,d,dr==='e')];
+ const V=[[0,0,0,2800,1800,32,0x9ab070],blk(0,-900,2864,32,300,W),blk(0,900,2864,32,300,W),blk(-1400,0,32,1800,300,W),blk(1400,0,32,1800,300,W),
+  ...hz(-700,-450,320,260,'e'),...hz(-700,450,320,260,'e'),...hz(0,-560,300,240,'s'),...hz(0,560,300,240,'n'),...hz(700,-450,320,260,'w'),...hz(700,450,320,260,'w'),
+  blk(0,0,110,110,50,0x888890),blk(-300,-130,64,64,64,C),blk(300,130,64,64,64,C),blk(-350,200,64,64,64,C),blk(350,-200,64,64,64,C),blk(0,-250,200,24,36,W),blk(0,250,200,24,36,W)];
+ MAPS.village={b:V,sp:[[-1250,-250,0,'terrorist'],[-1250,-100,0,'terrorist'],[-1250,50,0,'terrorist'],[-1250,200,0,'terrorist'],[-1150,-170,0,'terrorist'],[-1150,120,0,'terrorist'],[1250,-250,0,'counterterrorist'],[1250,-100,0,'counterterrorist'],[1250,50,0,'counterterrorist'],[1250,200,0,'counterterrorist'],[1150,-170,0,'counterterrorist'],[1150,120,0,'counterterrorist']]};})();
 function mkHuman(col){const g=new THREE.Group(),bd=new THREE.Group(),H={g,bd,ph:Math.random()*6,amp:0};g.add(bd);
  const bx=(w,h,d,c,x,y,z,par)=>{const m=mk(new THREE.BoxGeometry(w,h,d),c,x,y,z);par.add(m);return m;},pv=(x,y,par)=>{const p=new THREE.Group();p.position.set(x,y,0);par.add(p);return p;};
  H.lL=pv(-5,34,g);H.rL=pv(5,34,g);H.lK=pv(0,-17,H.lL);H.rK=pv(0,-17,H.rL);[H.lL,H.rL,H.lK,H.rK].forEach(q=>bx(9,17,10,0x2f3a52,0,-8.5,0,q));
@@ -686,7 +699,7 @@ function animHuman(H,v,dt,cr){H.ph+=v*dt*.045;H.amp+=(Math.min(1,Math.abs(v)/190
 const FIXT=[[-300,-600],[300,-1000],[0,-1500],[-450,-2000],[450,-2500]];
 function mkBot(n,col,home,passive,fixed,team){const H=mkHuman(col),g=H.g;g.rotation.order='YXZ';scene.add(g);
  const npc=document.createElement('canvas');npc.width=128;npc.height=36;const np=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(npc),fog:false,transparent:true}));np.scale.set(52,15,1);np.position.set(0,88,0);np.visible=false;g.add(np);
- const b={m:g,p:g.position,H,n,team,fr:0,cd:1,sw:0,sd:1,rt:0,np,npc,home,passive,fixed,ph:Math.random()*6,vx:0,vz:0,yaw:0,blind:0,money:800};botSpawn(b);bots.push(b);}
+ const b={m:g,p:new THREE.Vector3(),H,n,team,fr:0,cd:1,sw:0,sd:1,rt:0,np,npc,home,passive,fixed,ph:Math.random()*6,vx:0,vz:0,yaw:0,blind:0,money:800};botSpawn(b);bots.push(b);}
 function initBots(){for(const b of bots)scene.remove(b.m);bots=[];const tr=S.map==='train',tdm=S.gm.mode!=='dm',k=S.gm.bots,TC={T:0xb5651d,CT:0x3a6ab0},C=[0x7a3a3a,0x3a6a4a,0x3a4a8a,0x8a6a2a,0x6a3a7a],ot=S.gm.team==='T'?'CT':'T';P.team=tdm&&!tr?S.gm.team:'p';
  if(tr){FIXT.forEach(([x,z],i)=>mkBot('Target '+(i+1),0xd08030,{x,y:0,z},true,true,'x'+i));for(let i=0;i<k;i++)mkBot('Bot '+(i+1),C[i%5],{x:(i-(k-1)/2)*220,y:0,z:-3300},true,false,'y'+i);if(k)setTimeout(()=>flash('Bots were sent to the far end of the range as moving targets',4000),300);}
  else{const al=tdm?k>>1:0;for(let i=0;i<k;i++){const ally=i<al,t=tdm?(ally?S.gm.team:ot):'b'+i;mkBot((ally?'Ally ':'Bot ')+(i+1),tdm?TC[t]:C[i%5],null,false,false,t);}}}
@@ -734,7 +747,7 @@ const navOut=n=>({B:n.B,C:n.C,nx:n.nx,nz:n.nz,n:n.nodes.map(o=>[Math.round(o.x),
 function navIn(o){const nodes=o.n.map(a=>({x:a[0],y:a[1],z:a[2],ix:a[3],iz:a[4],a:a[5]})),col=new Map();nodes.forEach((n,i)=>{const k=n.ix*o.nz+n.iz;(col.get(k)||col.set(k,[]).get(k)).push(i);});return{B:o.B,C:o.C,nx:o.nx,nz:o.nz,nodes,col};}
 async function prepareNav(){const w=world,key=String(S.map);w.nav=null;const rec=lib.find(r=>r.type==='nav'&&r.w===key);
  if(rec){try{w.nav=navIn(JSON.parse(new TextDecoder().decode(rec.data)));return;}catch(e){}}
- const nav=await buildNav(w,p=>err('Bots are learning the map… '+Math.round(p*100)+'%'),()=>world!==w);if(!nav||world!==w)return;w.nav=nav;err('Bots learned the map ✓');
+ const nav=await buildNav(w,p=>{err('Bots are learning the map… '+Math.round(p*100)+'%');loadUI('Bots are learning the map… '+Math.round(p*100)+'%',p);},()=>world!==w);if(!nav||world!==w)return;w.nav=nav;err('Bots learned the map ✓');
  try{await libAdd(key+' nav','nav',new TextEncoder().encode(JSON.stringify(navOut(nav))).buffer,{w:key,k:Date.now()});}catch(e){}}
 function nearNode(nav,x,y,z){const ix=Math.floor((x-nav.B.x0)/nav.C),iz=Math.floor((z-nav.B.z0)/nav.C);let bi=-1,bd=1e9;for(let a=-1;a<=1;a++)for(let b=-1;b<=1;b++){const l=nav.col.get((ix+a)*nav.nz+iz+b);if(l)for(const i of l){const n=nav.nodes[i],d=Math.hypot(n.x-x,n.z-z)+Math.abs(n.y-y)*2;if(d<bd){bd=d;bi=i;}}}return bi;}
 function astar(nav,s,g){const N=nav.nodes,gs=new Float32Array(N.length).fill(1e9),from=new Int32Array(N.length).fill(-1),cl=new Uint8Array(N.length),h=[];
@@ -744,8 +757,9 @@ function astar(nav,s,g){const N=nav.nodes,gs=new Float32Array(N.length).fill(1e9
  if(from[g]<0&&s!==g)return null;const p=[];for(let i=g;i!==-1;i=from[i]){p.push(i);if(i===s)break;}return p.reverse();}
 function botGoto(b,g,dt){const nav=world.nav;if(!nav)return[g.x-b.p.x,g.z-b.p.z];
  if((b.pt=(b.pt||0)-dt)<=0||!b.path||Math.hypot((b.gx||0)-g.x,(b.gz||0)-g.z)>200){b.pt=1+Math.random()*.8;b.gx=g.x;b.gz=g.z;const s=nearNode(nav,b.p.x,b.p.y,b.p.z),e=nearNode(nav,g.x,g.y,g.z);b.path=s>=0&&e>=0?astar(nav,s,e):null;b.pi=1;}
- const Q=b.path;if(Q&&b.pi<Q.length){let n=nav.nodes[Q[b.pi]];while(b.pi<Q.length-1&&Math.hypot(n.x-b.p.x,n.z-b.p.z)<40&&Math.abs(n.y-b.p.y)<9){b.pi++;n=nav.nodes[Q[b.pi]];}return[n.x-b.p.x,n.z-b.p.z];}
+ const Q=b.path;if(Q&&b.pi<Q.length){let n=nav.nodes[Q[b.pi]];while(b.pi<Q.length-1&&Math.hypot(n.x-b.p.x,n.z-b.p.z)<40&&Math.abs(n.y-b.p.y)<9){b.pi++;n=nav.nodes[Q[b.pi]];}if((b.sk2=(b.sk2||0)-dt)<=0){b.sk2=.15;for(let k=Math.min(Q.length-1,b.pi+3);k>b.pi;k--){const m=nav.nodes[Q[k]];if(Math.abs(m.y-b.p.y)<10&&world.trace(b.p.x,b.p.y+18,b.p.z,m.x,b.p.y+18,m.z).f>=1){b.pi=k;n=m;break;}}}return[n.x-b.p.x,n.z-b.p.z];}
  return[g.x-b.p.x,g.z-b.p.z];}
+function syncBot(b,dt){if(b.sy===undefined||Math.abs(b.p.y-b.sy)>40)b.sy=b.p.y;else b.sy+=(b.p.y-b.sy)*Math.min(1,dt*16);b.m.position.set(b.p.x,b.sy,b.p.z);}
 function slide(b,mx,mz){const p=b.p,t=world.trace(p.x,p.y,p.z,p.x+mx,p.y,p.z+mz);if(t.all)return;if(t.f>=1){p.x=t.x;p.z=t.z;return;}
  const u=world.trace(p.x,p.y+18,p.z,p.x+mx,p.y+18,p.z+mz);if(!u.all&&u.f>=1){p.x=u.x;p.y+=18;p.z=u.z;return;}
  p.x=t.x;p.z=t.z;const r=1-t.f,a=world.trace(p.x,p.y,p.z,p.x+mx*r,p.y,p.z);if(!a.all)p.x=a.x;const c=world.trace(p.x,p.y,p.z,p.x,p.y,p.z+mz*r);if(!c.all)p.z=c.z;}
@@ -786,9 +800,9 @@ function bombTick(dt){if(!BM.on)return;BM.t-=dt;
  if(al('CT')===0)endRound('T','Terrorists win');else if(al('T')===0&&!BM.planted)endRound('CT','Counter-Terrorists win');else if(!BM.planted&&BM.t<=0)endRound('CT','Time is up');}
 /* ---------- Bot brain ---------- */
 function botTick(b,dt){
- if(b.dead){b.dt+=dt;const u=Math.min(1,b.dt/.6),e=1-(1-u)*(1-u);b.m.rotation.x=e*1.5;b.p.y=b.gy+6*e;b.H.lA.rotation.x=1.05+e*1.1;b.H.rA.rotation.x=1.4+e*.6;b.H.lL.rotation.x=0;b.H.rL.rotation.x=.3*e;if(!BM.on&&(b.rt-=dt)<=0)botSpawn(b);return;}
- if(b.passive){const ox=b.p.x;b.yaw=Math.atan2(-(P.p.x-b.p.x),-(P.p.z-b.p.z));b.m.rotation.y=b.yaw;if(!b.fixed)b.p.x=b.home.x+Math.sin(performance.now()/1400+b.ph)*500;animHuman(b.H,b.fixed?0:Math.abs(b.p.x-ox)/dt,dt);return;}
- if(BM.on&&BM.ph!=='live'){animHuman(b.H,0,dt,false);return;}
+ if(b.dead){b.dt+=dt;const u=Math.min(1,b.dt/.6),e=1-(1-u)*(1-u);b.m.rotation.x=e*1.5;b.p.y=b.gy+6*e;b.H.lA.rotation.x=1.05+e*1.1;b.H.rA.rotation.x=1.4+e*.6;b.H.lL.rotation.x=0;b.H.rL.rotation.x=.3*e;syncBot(b,1);if(!BM.on&&(b.rt-=dt)<=0)botSpawn(b);return;}
+ if(b.passive){const ox=b.p.x;b.yaw=Math.atan2(-(P.p.x-b.p.x),-(P.p.z-b.p.z));b.m.rotation.y=b.yaw;if(!b.fixed)b.p.x=b.home.x+Math.sin(performance.now()/1400+b.ph)*500;animHuman(b.H,b.fixed?0:Math.abs(b.p.x-ox)/dt,dt);syncBot(b,1);return;}
+ if(BM.on&&BM.ph!=='live'){animHuman(b.H,0,dt,false);syncBot(b,dt);return;}
  updNP(b);b.blind=Math.max(0,b.blind-dt);
  if((b.tgT=(b.tgT||0)-dt)<=0){b.tgT=.4;let bd=1e9,bt=null;for(const t of foes(b)){const q=posOf(t),L=Math.hypot(q.x-b.p.x,q.z-b.p.z);if(L<bd){bd=L;bt=t;}}b.tg=bt;}
  const t=b.tg&&!b.tg.dead?b.tg:null;let d=999,dx=0,dz=1;
@@ -796,11 +810,12 @@ function botTick(b,dt){
  const combat=!!(t&&b.vis);let dvx=0,dvz=0;
  if(combat){if((b.sw-=dt)<=0){b.sw=.6+Math.random()*1.2;b.sd=Math.random()<.5?-1:1;b.duck=d>650&&Math.random()<.45;}const f=d>450?1:d<200?-.6:0,sp=190*(b.duck?.4:1);dvx=(dx/d*f-dz/d*b.sd*.7)*sp;dvz=(dz/d*f+dx/d*b.sd*.7)*sp;}
  else{b.duck=false;if(!(BM.on&&bombAct(b,dt))){const g=BM.on?bombGoal(b):(t?posOf(t):null);if(g){const v=botGoto(b,g,dt),L=Math.hypot(v[0],v[1]);if(L>30){dvx=v[0]/L*200;dvz=v[1]/L*200;}}}}
+ for(const o of bots)if(o!==b&&!o.dead&&!o.passive){const ax=b.p.x-o.p.x,az=b.p.z-o.p.z,L=Math.hypot(ax,az);if(L>0&&L<48&&Math.abs(b.p.y-o.p.y)<40){dvx+=ax/L*90;dvz+=az/L*90;}}
  const k=Math.min(1,dt*6);b.vx+=(dvx-b.vx)*k;b.vz+=(dvz-b.vz)*k;slide(b,b.vx*dt,b.vz*dt);climb(b);
  b.vy-=GRAV*dt;const u=world.trace(b.p.x,b.p.y,b.p.z,b.p.x,b.p.y+b.vy*dt,b.p.z);if(!u.all)b.p.y=u.y;if(u.f<1)b.vy=0;if(b.p.y<world.killY)botSpawn(b);
  b.sk=(b.sk||0)+dt;if(b.sk>1){b.sk=0;if(Math.hypot(b.p.x-(b.lx||0),b.p.z-(b.lz||0))<12&&(dvx||dvz)){b.path=null;b.sd*=-1;}b.lx=b.p.x;b.lz=b.p.z;}
  const sp2=Math.hypot(b.vx,b.vz);let ty=b.yaw;if(combat)ty=Math.atan2(-dx,-dz);else if(sp2>25)ty=Math.atan2(-b.vx,-b.vz);let df=ty-b.yaw;df=Math.atan2(Math.sin(df),Math.cos(df));b.yaw+=df*Math.min(1,dt*9);b.m.rotation.y=b.yaw;
- const fw=-Math.sin(b.yaw)*b.vx-Math.cos(b.yaw)*b.vz;animHuman(b.H,sp2*(fw<-20?-1:1),dt,!!b.duck);
+ const fw=-Math.sin(b.yaw)*b.vx-Math.cos(b.yaw)*b.vz;animHuman(b.H,sp2*(fw<-20?-1:1),dt,!!b.duck);syncBot(b,dt);
  if(combat&&(b.cd-=dt)<=0){const w=W[b.w];b.cd=(w.r*(1.4+Math.random()*1.2)+.2)/dfm();
   if(!b.blind){const q=posOf(t),tv=t===P?P.v:{x:t.vx,z:t.vz},ok=Math.random()<Math.min(.9,clamp(.6-d/3000,.08,.6)*dfm())*(Math.hypot(tv.x,tv.z)>180?.65:1),j=()=>ok?0:(Math.random()-.5)*80;
    tracer({x:b.p.x-Math.sin(b.yaw)*22+Math.cos(b.yaw)*12,y:b.p.y+52,z:b.p.z-Math.cos(b.yaw)*22-Math.sin(b.yaw)*12},{x:q.x+j(),y:q.y+40+j()/2,z:q.z+j()},0xff6a5a);
@@ -814,11 +829,11 @@ function gunMesh(id){const g=new THREE.Group(),c=WEAPONS0.find(w=>w.id===id),cat
  return g;}
 function setGun(H,id){if(!H.gs)return;while(H.gs.children.length)H.gs.remove(H.gs.children[0]);const g=gunMesh(id);g.rotation.x=-Math.PI/2;H.gs.add(g);}
 const DEFM={},DEFB={};
-async function autoAssets(){const get=async u=>{try{const r=await fetch(u);return r.ok?await r.arrayBuffer():null;}catch(e){return null;}},names=new Set();
- await Promise.all(WEAPONS.filter(w=>w.id!=='armor').map(async w=>{slotNames(w.id).forEach(n=>names.add(n));const AL={mp5navy:['mp5navy','mp5'],glock18:['glock18','glock']};out:for(const nm of AL[w.id]||[w.id])for(const d of['model/','models/']){const m=await get(d+'v_'+nm+'.mdl');if(m&&new DataView(m).getInt32(0,true)===0x54534449){DEFM[w.id]=m;break out;}}}));
- await Promise.all([...names].map(async n=>{for(const u of['sound/'+n+'.wav','sound/'+n+'.ogg','sound/'+n+'.mp3']){const b=await get(u);if(b&&new Uint8Array(b)[0]!==60){DEFB[n]=b;return;}}}));
+async function autoAssets(){const get=async u=>{try{const r=await fetch(u);return r.ok?await r.arrayBuffer():null;}catch(e){return null;}},names=new Set(),ws=WEAPONS.filter(w=>w.id!=='armor');ws.forEach(w=>slotNames(w.id).forEach(n=>names.add(n)));const tot=ws.length+names.size;let done=0;const tick=t=>loadUI(t+' '+(++done)+'/'+tot,done/tot);
+ await Promise.all(ws.map(async w=>{const AL={mp5navy:['mp5navy','mp5'],glock18:['glock18','glock']};out:for(const nm of AL[w.id]||[w.id])for(const d of['model/','models/']){const m=await get(d+'v_'+nm+'.mdl');if(m&&new DataView(m).getInt32(0,true)===0x54534449){DEFM[w.id]=m;break out;}}tick('Loading models…');}));
+ await Promise.all([...names].map(async n=>{for(const u of['sound/'+n+'.wav','sound/'+n+'.ogg','sound/'+n+'.mp3']){const b=await get(u);if(b&&new Uint8Array(b)[0]!==60){DEFB[n]=b;break;}}tick('Loading sounds…');}));
  console.log('Auto assets - models found:',Object.keys(DEFM).join(', ')||'none','| sounds found:',Object.keys(DEFB).length);
- if(Object.keys(DEFM).length||Object.keys(DEFB).length){bufs.clear();await applyLoadout();renderWeps();}}
+ loadUI('Building weapon models…',1);bufs.clear();await applyLoadout();renderWeps();}
 let lastM=800;
 function hudBars(){const hp=Math.max(0,Math.round(P.hp)),ar=Math.max(0,Math.round(P.ar)),f=$('hpf');f.style.width=Math.min(100,hp)+'%';f.style.background=hp>50?'#4fc34f':hp>25?'#e8b030':'#e03030';$('hpn').textContent=hp;$('arf').style.width=Math.min(100,ar)+'%';$('arn').textContent=ar;
  const m=$('money');m.textContent=S.map==='train'?'$ ∞':'$'+P.money;if(P.money!==lastM){if(P.money>lastM){m.classList.remove('pulse');void m.offsetWidth;m.classList.add('pulse');}lastM=P.money;}}
@@ -833,9 +848,9 @@ function dmTick(dt,now){nadeTick(dt);pkTick(dt);hudBars();burstTick(dt);bombTick
  for(const b of bots)botTick(b,dt);
  const id=S.load[cs],a=W[id]&&W[id].mag?ammoOf(id):null;
  $('dm').textContent=(P.dead?'YOU DIED · respawning\n':'')+''+(WBY[id]?WBY[id].name:'')+(id in SIL&&SIL[id]?' [SIL]':'')+(BURST[id]?' [BURST]':'')+(a?'  '+a.m+'/'+a.r:'')+(reloadT>0?' (reload)':'')+'\n'+[['hegrenade','HE'],['flashbang','FB'],['smokegrenade','SG']].map(([g,n])=>id===g?'['+n+' '+GN[g]+']':n+' '+GN[g]).join(' ')+'\nFrags '+P.fr+' · Deaths '+P.de+' · limit '+FL+(S.gm.mode==='tdm'?'\nT '+TSC.T+' – CT '+TSC.CT+' (you: '+P.team+')':'')+(BM.on?bombHud():'')+(S.gm.time>0?' · '+Math.floor(gmT/60)+':'+String(Math.floor(gmT%60)).padStart(2,'0'):'');}
-function wepRow(w,o){const ks=[['mdl','Model']].concat(slotNames(w.id).map(n=>[n,n+'.wav']));
+function wepRow(w,o){const ks=[['mdl','Model']];
  return '<details class="opt"'+(o?' open':'')+'><summary>'+w.name+'</summary>'+ks.map(([k,n])=>{const r=k==='mdl'?lib.find(x=>x.id===S.wep[w.id]):lib.find(x=>x.id===S.snd[w.id+':'+k]);
-  return `<div class="li"><span>${n}</span><small>${r?esc(r.name):(k==='mdl'?(ASSETS.models[w.id]||DEFM[w.id]?'default':'none'):(DEFB[k]||(ASSETS.sounds[w.id]||{})[k]?'default':'missing'))}</small>${k==='mdl'?'':'<input type="number" class="off" step="10" title="Offset ms: + delay, − trim the start" style="width:58px" data-w="'+w.id+'" data-k="'+k+'" value="'+(S.sndOff[w.id+':'+k]||0)+'">'}<button class="btn" data-w="${w.id}" data-k="${k}">Add…</button>${r?`<button class="x" data-w="${w.id}" data-k="${k}" data-c="1" title="Clear">✕</button>`:''}</div>`;}).join('')+'</details>';}
+  return `<div class="li"><span>${n}</span><small>${r?esc(r.name):(k==='mdl'?(ASSETS.models[w.id]||DEFM[w.id]||PKM[w.id]?'default':'none'):(DEFB[k]||(ASSETS.sounds[w.id]||{})[k]?'default':'missing'))}</small>${k==='mdl'?'':'<input type="number" class="off" step="10" title="Offset ms: + delay, − trim the start" style="width:58px" data-w="'+w.id+'" data-k="'+k+'" value="'+(S.sndOff[w.id+':'+k]||0)+'">'}<button class="btn" data-w="${w.id}" data-k="${k}">Add…</button>${r?`<button class="x" data-w="${w.id}" data-k="${k}" data-c="1" title="Clear">✕</button>`:''}</div>`;}).join('')+'</details>';}
 function bindWeps(root){let cur=null;root.querySelectorAll('input.off').forEach(i=>i.onchange=()=>{S.sndOff[i.dataset.w+':'+i.dataset.k]=+i.value||0;save();});const inp=document.createElement('input');inp.type='file';inp.hidden=true;root.appendChild(inp);
  root.querySelectorAll('button[data-k]').forEach(b=>b.onclick=async()=>{const w=WBY[b.dataset.w],k=b.dataset.k;
   if(b.dataset.c){await libDel(k==='mdl'?S.wep[w.id]:S.snd[w.id+':'+k]);if(k==='mdl')delete S.wep[w.id];else delete S.snd[w.id+':'+k];save();wAfter(w,k);return;}
@@ -850,7 +865,7 @@ async function linkFolder(fs){let nm=0,ns=0;err('');
   if(m){const id=ALIAS[m[1].toLowerCase()]||m[1].toLowerCase();if(!WBY[id])continue;const buf=await f.arrayBuffer();if(new DataView(buf).getInt32(0,true)!==0x54534449){err(nme+': not a GoldSrc MDL');continue;}const r=await libAdd(nme,'mdl',buf,{w:id,k:'mdl'});S.wep[id]=r.id;nm++;continue;}
   if(!/\.(wav|mp3|ogg)$/i.test(nme))continue;const base=nme.replace(/\.\w+$/,'').toLowerCase(),ids=WEAPONS.filter(w=>slotNames(w.id).includes(base));if(!ids.length)continue;const buf=await f.arrayBuffer();for(const w of ids){const r=await libAdd(nme,'snd',buf,{w:w.id,k:base});S.snd[w.id+':'+base]=r.id;ns++;}}
  save();bufs.clear();await applyLoadout();renderWeps();if(buyOpen)renderBuyRight();err(nm+' model(s), '+ns+' sound(s) linked');}
-function renderWeps(){const el=$('t-weps');el.innerHTML='<p>Put your files in two folders: <b>model</b> (v_ak47.mdl, v_awp.mdl, v_m4a1.mdl, v_mp5navy.mdl…) and <b>sound</b> (original CS 1.6 names: ak47-1.wav, ak47_clipout.wav, m4a1_silencer_on.wav, zoom.wav…). Link the parent folder once (or each folder); everything is saved per weapon in this browser.</p><p><button class="btn p" id="lnk">Link assets folder…</button><input type="file" id="lnkf" webkitdirectory multiple hidden></p>'+WEAPONS.filter(w=>w.id!=='armor').map(w=>wepRow(w)).join('');bindWeps(el);$('lnk').onclick=()=>$('lnkf').click();$('lnkf').onchange=e=>{const l=[...e.target.files];e.target.value='';linkFolder(l);};}
+function renderWeps(){const el=$('t-weps');el.innerHTML='<p>Optional per-weapon model override. Full model/sound packs are in Settings → Model packs.</p>'+WEAPONS.filter(w=>w.id!=='armor').map(w=>wepRow(w)).join('');bindWeps(el);}
 const ED={name:'My map',boxes:[],w:128,d:128,th:32,col:0x90b0f0};
 function swapWorld(w){scene.remove(world.grp);world.grp.traverse(o=>{o.geometry&&o.geometry.dispose();if(o.material){o.material.map&&o.material.map.dispose();o.material.dispose();}});world=w;scene.add(w.grp);}
 function rebuildDraft(chk){swapWorld(boxMap('c',ED.boxes));if(chk&&!world.free(P.p.x,P.p.y,P.p.z,false)){ED.boxes.pop();swapWorld(boxMap('c',ED.boxes));flash('Too close to place');}}
@@ -861,13 +876,16 @@ function undoBlock(){if(playing&&S.map==='draft'&&ED.boxes.length>1){ED.boxes.po
 function edRead(){ED.name=$('bn').value||'My map';ED.w=+$('bw').value||128;ED.d=+$('bd').value||128;ED.th=+$('bt').value||32;ED.col=parseInt($('bc').value,16);}
 const mapIsBomb=id=>id==='bomb'||lib.some(r=>r.id===id&&r.type==='bsp'&&/^de_/i.test(r.name));
 function syncMode(){const x=$('gx');if(mapIsBomb(S.map))x.value='bomb';else if(x.value==='bomb')x.value='tdm';gmRead();}
+let ASSETP=Promise.resolve();
+function loadUI(t,f){$('loading').style.display='flex';$('ltxt').textContent=t;$('lfill').style.width=Math.round(f*100)+'%';}
+function loadDone(){$('loading').style.display='none';}
 function gmRead(){S.gm={mode:$('gx').value,team:$('gy').value,bots:clamp(+$('gb').value||0,0,10),diff:+$('gd').value,bw:$('gw').value,frag:clamp(+$('gf').value||30,5,200),time:clamp(+$('gt').value||0,0,60)};save();}
 (function(){const g=S.gm;$('gx').value=g.mode;$('gy').value=g.team;$('gb').value=g.bots;$('gd').value=g.diff;$('gw').value=g.bw;$('gf').value=g.frag;$('gt').value=g.time;})();
 $('gx').onchange=()=>{const b=$('gx').value==='bomb';if(b&&!mapIsBomb(S.map))S.map=(lib.find(r=>r.type==='bsp'&&/^de_/i.test(r.name))||{id:'bomb'}).id;else if(!b&&mapIsBomb(S.map))S.map='arena';gmRead();save();renderLib();loadMap();};
-$('go').onclick=async()=>{await NAVP;gmRead();if(S.gm.mode==='bomb'&&!mapIsBomb(S.map)){err('Bomb Defusal needs a de_ map');return;}FL=S.gm.frag;gmT=S.gm.time*60;P.fr=P.de=0;TSC.T=TSC.CT=0;P.money=800;GN={hegrenade:1,flashbang:2,smokegrenade:1};clearNades();P.hp=100;P.ar=100;P.dead=false;third=false;S.load=S.load.map((x,i)=>x||defLoad()[i]);AM={};reloadT=0;initBots();BM.on=S.gm.mode==='bomb';{const dl=BM.on?[null,P.team==='T'?'glock18':'usp','knife']:defLoad();S.load[0]=dl[0];S.load[1]=dl[1];S.load[2]='knife';applyLoadout();}if(BM.on)startBomb();else restart();inMatch=true;play();};
+$('go').onclick=async()=>{await ASSETP;await NAVP;gmRead();if(S.gm.mode==='bomb'&&!mapIsBomb(S.map)){err('Bomb Defusal needs a de_ map');return;}FL=S.gm.frag;gmT=S.gm.time*60;P.fr=P.de=0;TSC.T=TSC.CT=0;P.money=800;GN={hegrenade:1,flashbang:2,smokegrenade:1};clearNades();P.hp=100;P.ar=100;P.dead=false;third=false;S.load=S.load.map((x,i)=>x||defLoad()[i]);AM={};reloadT=0;initBots();BM.on=S.gm.mode==='bomb';{const dl=BM.on?[null,P.team==='T'?'glock18':'usp','knife']:defLoad();S.load[0]=dl[0];S.load[1]=dl[1];S.load[2]='knife';applyLoadout();}if(BM.on)startBomb();else restart();inMatch=true;play();};
 const BL=[],PK=[];let bGeo=null,bMat=null,NEAR=null;
-function blood(p,d,n){if(!bGeo){bGeo=new THREE.BoxGeometry(1.6,1.6,1.6);bMat=new THREE.MeshBasicMaterial({color:0xa00808,fog:false});}
- for(let i=0;i<(n||8);i++){const m=new THREE.Mesh(bGeo,bMat);m.position.set(p.x,p.y,p.z);scene.add(m);BL.push({m,v:new THREE.Vector3(d.x*90+(Math.random()-.5)*150,d.y*60+Math.random()*110,d.z*90+(Math.random()-.5)*150),t:.5+Math.random()*.4});}}
+function blood(p,d,n){if(!bGeo){bGeo=new THREE.BoxGeometry(2.2,2.2,2.2);bMat=new THREE.MeshBasicMaterial({color:0xa00808,fog:false});}
+ for(let i=0;i<(n||8)*2.2;i++){const m=new THREE.Mesh(bGeo,bMat);m.position.set(p.x,p.y,p.z);scene.add(m);BL.push({m,v:new THREE.Vector3(d.x*130+(Math.random()-.5)*200,d.y*80+Math.random()*150,d.z*130+(Math.random()-.5)*200),t:.6+Math.random()*.6});}}
 const pkTex={};
 function pkLab(n){if(!pkTex[n]){const c=document.createElement('canvas');c.width=128;c.height=32;const x=c.getContext('2d');x.fillStyle='#000a';x.fillRect(0,0,128,32);x.font='bold 18px Verdana';x.textAlign='center';x.fillStyle='#ffd24a';x.fillText(n,64,23);pkTex[n]=new THREE.CanvasTexture(c);}
  const s=new THREE.Sprite(new THREE.SpriteMaterial({map:pkTex[n],fog:false,transparent:true}));s.scale.set(36,9,1);s.position.y=14;return s;}
@@ -891,6 +909,20 @@ function applyCross(){const x=S.xh,c=$('cross'),g=+x.gap,L=+x.size,T=+x.thick;c.
  else if(x.style==='circle')h='<i class="xr" style="left:'+(-L)+'px;top:'+(-L)+'px;width:'+L*2+'px;height:'+L*2+'px;border-color:'+x.color+'"></i><i class="xb" style="left:-1px;top:-1px;width:2px;height:2px"></i>';
  else h=[[-g-L,-T/2,L,T],[g,-T/2,L,T],[-T/2,-g-L,T,L],[-T/2,g,T,L]].map(a=>'<i class="xb" style="left:'+a[0]+'px;top:'+a[1]+'px;width:'+a[2]+'px;height:'+a[3]+'px"></i>').join('');c.innerHTML=h;}
 [['xs','style'],['xc','color'],['xz','size'],['xt','thick'],['xg','gap']].forEach(([id,k])=>{const e=$(id);e.value=S.xh[k];e.oninput=()=>{S.xh[k]=e.type==='range'?+e.value:e.value;applyCross();save();};});applyCross();
+const PKM={},PKS={};
+function packIndex(name){for(const k in PKM)delete PKM[k];for(const k in PKS)delete PKS[k];if(!name)return;
+ for(const r of lib){if(r.type!=='pk'||r.pk!==name)continue;const base=r.name.replace(/\.\w+$/,'').toLowerCase();if(r.k==='m'){const m=/^v_(.+)$/.exec(base);if(m){const id=ALIAS[m[1]]||m[1];if(WBY[id]&&new DataView(r.data).getInt32(0,true)===0x54534449)PKM[id]=r.data;}}else PKS[base]=r.data;}}
+function packNames(){const m={};for(const r of lib)if(r.type==='pk'){(m[r.pk]=m[r.pk]||{m:0,s:0})[r.k==='m'?'m':'s']++;}return m;}
+function renderPacks(){const L=packNames(),el=$('packs');let h='<div class="li'+(S.pack?'':' on')+'" data-p=""><span>Default (model/ and sound/ folders)</span><small>host</small></div>';
+ for(const n in L)h+='<div class="li'+(S.pack===n?' on':'')+'" data-p="'+esc(n)+'"><span>'+esc(n)+'</span><small>'+L[n].m+' models · '+L[n].s+' sounds</small><button class="x" data-d="'+esc(n)+'" title="Delete pack">✕</button></div>';
+ el.innerHTML=h;el.querySelectorAll('[data-p]').forEach(d=>d.onclick=()=>usePack(S.pack===d.dataset.p?'':d.dataset.p));el.querySelectorAll('[data-d]').forEach(b=>b.onclick=async e=>{e.stopPropagation();await delPack(b.dataset.d);});}
+async function usePack(n){loadUI('Loading pack…',.3);await new Promise(r=>setTimeout(r,30));S.pack=n||'';packIndex(S.pack);bufs.clear();loadUI('Building weapon models…',.7);await applyLoadout();save();renderPacks();renderWeps();loadDone();}
+async function delPack(n){for(const r of lib.filter(x=>x.type==='pk'&&x.pk===n))await libDel(r.id);if(S.pack===n)await usePack('');else renderPacks();}
+async function importPacks(files){const gr={};for(const f of files){const ps=(f.webkitRelativePath||f.name).split('/'),mi=ps.indexOf('model'),si=ps.indexOf('sound'),idx=mi>=0?mi:si;if(idx<0)continue;const k=mi>=0?'m':'s';if(k==='m'&&!/\.mdl$/i.test(f.name)||k==='s'&&!/\.(wav|mp3|ogg)$/i.test(f.name))continue;const pk=idx>0?ps[idx-1]:'Imported';(gr[pk]=gr[pk]||[]).push([f,k]);}
+ const names=Object.keys(gr);if(!names.length){err('No [pack]/model or [pack]/sound folders found');return;}const tot=names.reduce((q,n)=>q+gr[n].length,0);let done=0;
+ for(const n of names)for(const[f,k]of gr[n]){loadUI('Importing pack '+n+'… '+(++done)+'/'+tot,done/tot);await libAdd(f.name,'pk',await f.arrayBuffer(),{pk:n,k});}
+ S.pack=names[0];packIndex(S.pack);bufs.clear();loadUI('Building weapon models…',1);await applyLoadout();save();renderPacks();renderWeps();loadDone();err(names.length+' pack(s) added');}
+$('addpack').onclick=()=>$('packf').click();$('packf').onchange=e=>{const l=[...e.target.files];e.target.value='';importPacks(l);};
 /* ---------- Loop ---------- */
 function resize(){const w=innerWidth,h=innerHeight;R.setPixelRatio(S.style==='retro'?S.scale:Math.min(devicePixelRatio,2));R.setSize(w,h,false);
  cam.aspect=vcam.aspect=w/h;cam.fov=S.fov;cam.updateProjectionMatrix();vcam.updateProjectionMatrix();}
@@ -913,7 +945,7 @@ function tick(now){requestAnimationFrame(tick);
  if(mh&&playing)act('shoot',1);if(mh2&&playing&&S.load[cs]==='knife')stab();if(vm)vm.update(dt);
  $('spd').firstChild.nodeValue=Math.round(sp);$('tm').textContent=fmt(P.t)+'  jumps '+P.jumps;
  dome.position.copy(cam.position);if(!document.body.classList.contains('mainscr')){R.clear();R.render(scene,cam);R.clearDepth();R.render(vs,vcam);}}
-(async()=>{await libLoad();syncMode();showHome();renderLib();applyUI();await loadMap();await applyLoadout();renderLib();requestAnimationFrame(tick);autoAssets();})();
+(async()=>{await libLoad();syncMode();showHome();renderLib();applyUI();await loadMap();packIndex(S.pack);await applyLoadout();renderLib();requestAnimationFrame(tick);renderPacks();ASSETP=autoAssets().then(loadDone,loadDone);})();
 </script>
 </body>
 </html>
